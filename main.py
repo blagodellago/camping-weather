@@ -1,7 +1,7 @@
 # blago
-# Return climbing, camping, or swimming destinations with fine weather
+# Return bouldering, camping, or swimming destinations with fine weather
 
-import pyowm
+import pyowm, sys, getopt
 from datetime import timedelta, datetime
 import pandas as pd
 
@@ -23,25 +23,66 @@ class Destination:
   # recreational destinations: containing location, weather and driving details
 
   instances = []
+  bouldering_instances = []
+  camping_instances = []
+  swimming_instances = []
 
-  def __init__(self, apikey, name, latitude, longitude, driving_minutes=None, camping=False, climbing=False, swimming=False):
+  def __init__(self, apikey, name, latitude, longitude, driving_minutes=None, camping=False, bouldering=False, swimming=False):
     self.apikey = apikey
     self.name = name
     self.latitude = latitude
     self.longitude = longitude
-    self.driving_minutes = driving_minutes
+    self.driving_minutes = int(driving_minutes)
     self.camping = camping
-    self.climbing = climbing
+    self.bouldering = bouldering
     self.swimming = swimming
+    self.forecast_type = None
     self.df = None
     self._moderate_rain = False
     self._light_rain = False
+    
     Destination.instances.append(self)
+    
+    if bouldering == True:
+      Destination.bouldering_instances.append(self)
+
+    if camping == True:
+      Destination.camping_instances.append(self)
+
+    if swimming == True:
+      Destination.swimming_instances.append(self)
 
   def __repr__(self):
     return self.name
 
-  def gen_weather(self, forecast_type='forecast_hourly'):
+  def weather(self, forecast_type='forecast_hourly', bldrng=False, cmpng=False, swmmng=False, drvng=800, args=0):
+    fc = forecast_type
+    if args == 1:
+      if bldrng == True:
+        if (self.bouldering == True and self.driving_minutes <= int(drvng)):
+          self._gen_weather(forecast_type=fc)
+      elif cmpng == True:
+        if (self.camping == True and self.driving_minutes <= int(drvng)):
+          self._gen_weather(forecast_type=fc)
+      elif swmmng == True:
+        if (self.swimming == True and self.driving_minutes <= int(drvng)):
+          self._gen_weather(forecast_type=fc)
+    elif args == 2:
+      if (bldrng == True and cmpng == True):
+        if (self.bouldering == True and self.camping == True and self.driving_minutes <= int(drvng)):
+          self._gen_weather(forecast_type=fc)
+      elif (bldrng == True and swmmng == True):
+        if (self.bouldering == True and self.swimming == True and self.driving_minutes <= int(drvng)):
+          self._gen_weather(forecast_type=fc)
+      elif (swmmng == True and cmpng == True):
+        if (self.swimming == True and self.camping == True and self.driving_minutes <= int(drvng)):
+          self._gen_weather(forecast_type=fc)
+    elif args == 3:
+      if (self.bouldering == True and self.camping == True and self.swimming == True and self.driving_minutes <= int(drvng)):
+        self._gen_weather(forecast_type=fc)
+
+
+  def _gen_weather(self, forecast_type='forecast_hourly'):
     self.forecast_type = forecast_type
 
     owm = pyowm.OWM(self.apikey)
@@ -60,6 +101,15 @@ class Destination:
     elif self.forecast_type == 'current':
       self.one_call = one_call.current
       self._current_weather()
+
+    self.display_weather()
+
+  # display output in relevant format
+  def display_weather(self):
+    if (self.forecast_type == 'forecast_hourly' or self.forecast_type == 'forecast_daily'):
+      self._display_forecast()
+    elif self.forecast_type == 'current':
+      self._display_current_weather()
 
   # build DataFrame formatted for hourly forecast
   def _forecast_hourly(self):
@@ -142,47 +192,56 @@ class Destination:
   def _gen_moderate_rain(self):
     self.rain_over_25 = pd.DataFrame({'Date' : i[0], 'Time' : i[1], 'Rain %' : self.df['Rain %'][i]} \
                             for i in self.df['Rain %'].index \
-                            if self.df['Rain %'][i] >= 25).set_index('Date')
+                            if self.df['Rain %'][i] >= 25)
     self._gen_rain_status()
 
   # build DataFrame of dates/times when rain probability is >= 10% and < 25%
   def _gen_light_rain(self):
     self.rain_over_10 = pd.DataFrame({'Date' : i[0], 'Time' : i[1], 'Rain %' : self.df['Rain %'][i]} \
                             for i in self.df['Rain %'].index \
-                            if (self.df['Rain %'][i] >= 10 and self.df['Rain %'][i] < 25)).set_index('Date')
+                            if (self.df['Rain %'][i] >= 10 and self.df['Rain %'][i] < 25))
     self._gen_rain_status()
 
   # build DataFrame of dates/times when expected conditions are 'rainy'
   def _gen_rain_status(self):
     self.rain_status = pd.DataFrame({'Date' : i[0], 'Time' : i[1], 'Weather' : self.df['Status'][i]} \
                             for i in self.df['Status'].index \
-                            if self.df['Status'][i] == 'Rain').set_index('Date')
+                            if self.df['Status'][i] == 'Rain')
+# .set_index('Date')
  
   # output various weather conditions formatted   
-  def display_forecast(self):
-    print("\n\t" + color.CYAN + "-"*len(self.name) + color.END)
-    print(color.CYAN + "|" + color.END + color.BOLD + f"\t{self.name.upper()}" + color.END + color.CYAN + "|" + color.END)
-    print("\t" + color.CYAN + "|" + "-"*len(self.name) + "|" + color.END)
+  def _display_forecast(self):
+    print("\n\t\t" + color.CYAN + "*"*len(self.name) + "**" + color.END)
+    print(color.CYAN + "\t\t*" + color.END + color.BOLD + f"{self.name.upper()}" + color.END + color.CYAN + "*" + color.END)
+    print("\t\t" + color.CYAN + "*"*len(self.name) + "**" + color.END)
+    print(f"\nDriving minutes: {self.driving_minutes}\n")
+    print(f"\nBouldering: {self.bouldering}")
+    print(f"Camping: {self.camping}")
+    print(f"Swimming: {self.swimming}\n")
     if self._moderate_rain == True:
-      print(color.RED + f"Moderate rain expected:" + color.END)
+      print(color.RED + f"\tModerate rain expected:" + color.END)
       print(f"{self.rain_over_25}\n")
     else:
-      print(color.GREEN + f"Moderate rain not expected\n" + color.END)
+      print(color.GREEN + f"\tModerate rain not expected\n" + color.END)
     if self._light_rain == True:
-      print(color.RED + f"Light rain expected:" + color.END)
+      print(color.RED + f"\tLight rain expected:" + color.END)
       print(f"{self.rain_over_10}\n")
       print(f"{self.rain_status}\n\n")
     else:
-      print(color.GREEN + f"Light rain not expected\n" + color.END)
+      print(color.GREEN + f"\tLight rain not expected\n" + color.END)
     print(f"\tMin temp: {self.min_temp} degrees")
     print(f"\tMax temp: {self.max_temp} degrees\n")
     print(f"\tWind speed: {self.min_wind_speed} - {self.max_wind_speed} mph")
     print(f"\tWind gusts: {self.min_wind_gusts} - {self.max_wind_gusts} mph")
 
-  def display_current_weather(self):
+  def _display_current_weather(self):
     print("\n\t\t" + color.CYAN + "*"*len(self.name) + "**" + color.END)
     print(color.CYAN + "\t\t*" + color.END + color.BOLD + f"{self.name.upper()}" + color.END + color.CYAN + "*" + color.END)
     print("\t\t" + color.CYAN + "*"*len(self.name) + "**" + color.END)
+    print(f"\nDriving minutes: {self.driving_minutes}\n")
+    print(f"\nBouldering: {self.bouldering}")
+    print(f"Camping: {self.camping}")
+    print(f"Swimming: {self.swimming}\n")
     print("\n", self.df, "\n\n\n")
     
 
@@ -213,6 +272,72 @@ Destination(apikey, 'Buena Vista - Turtle Rock Campground (Downtown)', 38.8838, 
 Destination(apikey, 'Buena Vista - Dispersed Mountain Camping', 38.7817, -106.2921, 162, True, False, True)
 Destination(apikey, 'Hagerman Tunnel', 39.2513, -106.4789, 141, True, False, False)
 
-for dest in Destination.instances:
-  dest.gen_weather('current')
-  dest.display_current_weather()
+# accept command line options
+argumentList = sys.argv[1:]
+options = "bcsd:f:"
+long_options = ["bouldering", "camping", "swimming", "driving", "forecast"]
+
+try:
+  arguments, values = getopt.getopt(argumentList, options, long_options)
+  bouldering = False
+  camping = False
+  swimming = False
+  driving_limit = 0
+  args = 0
+  for currentArgument, currentValue in arguments:
+    if currentArgument in ("-b", "--bouldering"):
+      bouldering = True
+      args += 1
+    elif currentArgument in ("-c", "--camping"):
+      camping = True
+      args += 1
+    elif currentArgument in ("-s", "--swimming"):
+      swimming = True
+      args += 1
+    elif currentArgument in ("-d", "--driving"):
+      driving_limit = int(currentValue)
+    elif currentArgument in ("-f", "--forecast"):
+      forecast = currentValue
+
+  for dest in Destination.instances:
+    dest.weather(forecast_type=forecast, bldrng=bouldering, cmpng=camping, swmmng=swimming, drvng=driving_limit, args=args)
+
+    # dest.gen_weather(forecast_type=forecast)
+    # dest.display_weather()
+
+except getopt.error as err:
+  # output error, and return with an error code
+  print(str(err))
+
+# try:
+#   arguments, values = getopt.getopt(argumentList, options, long_options)
+#   for currentArgument, currentValue in arguments:
+#     if currentArgument in ("-b", "--bouldering"):
+#       for dest in Destination.instances:
+#         if dest.bouldering == False:
+#           Destination.instances.remove(dest)
+#     elif currentArgument in ("-c", "--camping"):
+#       for dest in Destination.instances:
+#         if dest.camping == False:
+#           Destination.instances.remove(dest)
+#     elif currentArgument in ("-s", "--swimming"):
+#       for dest in Destination.instances:
+#         if dest.swimming == False:
+#           Destination.instances.remove(dest)
+#     elif currentArgument in ("-d", "--driving"):
+#       print(f"#1 {len(Destination.instances)}")
+#       for dest in Destination.instances:
+#         print(f"#2 {len(Destination.instances)}")
+#         if dest.driving_minutes > int(currentValue):
+#           Destination.instances.remove(dest)
+#           print(f"#3 {len(Destination.instances)}")
+#     elif currentArgument in ("-f", "--forecast"):
+#       forecast = currentValue
+
+#   for dest in Destination.instances:
+#     dest.gen_weather(forecast_type=forecast)
+#     dest.display_weather()
+
+# except getopt.error as err:
+#   # output error, and return with an error code
+#   print(str(err))
