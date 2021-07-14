@@ -6,12 +6,11 @@ Return weather forecasts for local and further afield recreation destinations.
 [Output options: display in terminal (-d, --display), write to file to camping-weather/WeatherOutput/ (-w, --write)]
 [Forecast options: 'current', forecast_hourly', 'forecast_daily' (-f, --forecast <forecast_type>)]
 
+
 Examples:
 
-- Write daily weather forecasts for destinations with bouldering and camping within a 2 hour drive:
+Write daily weather forecasts for destinations with bouldering and camping within a 2 hour drive:
+	> python3 main.py -a <apikey> -bcwm 120 -f 'forecast_hourly'
 
-> python3 main.py -a <apikey> -bcwm 120 -f 'forecast_hourly'
-
-
-- Display current weather forecasts for all swimming destinations:
-> python3 main.py -a <apikey> -sd -f 'current'
+Display current weather forecasts for all swimming destinations:
+	> python3 main.py -a <apikey> -sd -f 'current'
