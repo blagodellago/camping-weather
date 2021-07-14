@@ -39,8 +39,8 @@ class Destination:
   # save weather output to file
   @classmethod
   def output(cls, forecast_type):
-    home = str(Path.home())
-    filepath = f"{home}/python/camping-weather/WeatherOutput/{date.today().strftime('%m-%d-%Y')}__{forecast_type}.txt"
+    pwd = str(Path.cwd())
+    filepath = f"{pwd}/WeatherOutput/{date.today().strftime('%m-%d-%Y')}__{forecast_type}.txt"
     if os.path.exists(filepath):
       os.remove(filepath)
     weatherFile = open(filepath, 'a')
