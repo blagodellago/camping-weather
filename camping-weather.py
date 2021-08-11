@@ -351,11 +351,13 @@ def gen_destinations(apikey):
   Destination(apikey, 'Red Feather Lakes', 40.7543, -105.4822, 115, True, True, False)
   Destination(apikey, 'Vedauwoo', 41.1776, -105.3594, 140, True, True, True)
   Destination(apikey, 'Guanella Pass Bouldering', 39.6398, -105.7080, 69, False, True, False)
-  Destination(apikey, 'Guanella Pass Camping', 39.5424, -105.7454, 125, True, False, True)
-  Destination(apikey, 'Red Cliff', 39.5019, -106.3735, 125, True, True, True)
+  Destination(apikey, 'Guanella Pass Camping', 39.5424, -105.7454, 89, True, False, True)
+  Destination(apikey, 'Red Cliff - Homestake Reservoir Rd.', 39.5019, -106.3735, 125, True, True, True)
   Destination(apikey, 'Buena Vista - Turtle Rock Campground (Downtown)', 38.8838, -106.1505, 145, True, True, True)
   Destination(apikey, 'Buena Vista - Dispersed Mountain Camping', 38.7817, -106.2921, 162, True, False, True)
   Destination(apikey, 'Hagerman Tunnel', 39.2513, -106.4789, 141, True, False, False)
+  Destination(apikey, 'Twin Lakes Reservoir - Hills to the North', 39.0989, -106.3767, 139, True, False, True)
+  Destination(apikey, 'Glenwood Springs - Coffee Pot Rd.', 39.6781, -107.0966, 195, True, False, False)
 
 def welcome_banner():
   print()
